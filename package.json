@@ -1,10 +1,13 @@
 {
   "name": "proj1",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Chuwa Product Management — full-stack (React + Express + MongoDB)",
+  "private": true,
+  "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install"
   },
   "repository": {
     "type": "git",
@@ -13,13 +16,16 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/yukun-tech/proj1/issues"
   },
   "homepage": "https://github.com/yukun-tech/proj1#readme",
   "dependencies": {
-    "dotenv": "^17.4.0",
-    "mongoose": "^9.4.1"
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "prettier": "^3.8.3"
+  },
+  "devDependencies": {
+    "eslint": "^10.2.1"
   }
 }

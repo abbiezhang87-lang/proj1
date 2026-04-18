@@ -1,31 +1,84 @@
-import { useEffect, useState } from 'react';
-import './App.css';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Landing from './pages/landing/index.jsx';
-import LoginPage from './pages/auth/LoginPage.jsx';
+import { useDispatch } from 'react-redux';
 
+import Layout from './components/Layout.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+
+import SignIn from './pages/auth/SignIn.jsx';
+import SignUp from './pages/auth/SignUp.jsx';
+import UpdatePassword from './pages/auth/UpdatePassword.jsx';
+import ProductList from './pages/product/ProductList.jsx';
+import ProductDetail from './pages/product/ProductDetail.jsx';
+import CreateProduct from './pages/product/CreateProduct.jsx';
+import EditProduct from './pages/product/EditProduct.jsx';
+import ErrorPage from './pages/error/ErrorPage.jsx';
+
+import { fetchMe } from './features/auth/authSlice.js';
+import { fetchCart } from './features/cart/cartSlice.js';
+
+import './App.css';
+
+/**
+ * App-level routing. Layout wraps every page with Header + Footer + CartDrawer.
+ * Admin routes are gated by <ProtectedRoute adminOnly>.
+ *
+ * On mount we rehydrate user + cart from the server if a token exists.
+ */
 function App() {
-  const [count, setCount] = useState(0)
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    fetch('/api/test')
-      .then((res) => res.json())
-      .then((data) => {
-        console.log('Data from backend:', data);
-      });
-  }, []);
+    if (localStorage.getItem('token')) {
+      dispatch(fetchMe());
+      dispatch(fetchCart());
+    }
+  }, [dispatch]);
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* 必须使用 Route 标签，并把组件放在 element 属性里 */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/signin" element={<LoginPage />} />
+        <Route element={<Layout />}>
+          {/* Public */}
+          <Route path="/" element={<ProductList />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+
+          {/* Authenticated */}
+          <Route
+            path="/update-password"
+            element={
+              <ProtectedRoute>
+                <UpdatePassword />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin only */}
+          <Route
+            path="/products/new"
+            element={
+              <ProtectedRoute adminOnly>
+                <CreateProduct />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/products/:id/edit"
+            element={
+              <ProtectedRoute adminOnly>
+                <EditProduct />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 404 */}
+          <Route path="*" element={<ErrorPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
-
-
   );
 }
 
 export default App;
-

@@ -1,0 +1,257 @@
+================================================================
+styleFix.txt  —  代码风格建议
+================================================================
+
+本文档解释我做过的风格层面调整。
+不是bug但做了之后代码更专业，demo讲起来也好听
+
+每条都按这个格式写：
+    · 问题 / 现象
+    · 现状
+    · 建议改法
+    · 为什么（能讲的亮点）
+
+
+================================================================
+#A  管理员身份判定靠 "邮箱后缀"，工业级项目不能这样 （但是咱项目scope太大了搞不来）
+================================================================
+问题：
+    原backend/controllers/auth.js 第 55 行：
+        const isAdmin = email.toLowerCase().endsWith('@company.com');//我一开始这么写
+    任何人只要拿一个@maildrop.cc 域名的邮箱（甚至伪造 —— 注册时
+    谁也没校验邮箱真的可收邮件）就能直接获得管理员权限。
+
+现状：
+    为了demo 好演示，我保留了这段逻辑。
+    因为需求里写了 @maildrop.cc 自动变 admin"。
+
+建议改法（进product的code）：
+    1. 默认所有注册用户都是普通用户
+    2. 管理员由现有管理员手动 "邀请" 或在后台手动提权
+    3. 或者邮箱必须经过验证链接（email verification）
+
+为什么：
+    "trust boundary"信任边界,不要让客户端输入直接决定权限 （OWASP Top 10 里 "Broken Access Control"）
+    功能正确不等于安全正确
+
+================================================================
+#B  updateUser 允许前端随便把 isAdmin 改成 true
+================================================================
+问题：
+    controllers/user.js 原版没校验isAdmin的修改权限 ——
+    普通用户 PUT /api/users/自己id带isAdmin: true 就改了权限了。
+
+现状：
+    我已经把这个逻辑改掉了（controllers/user.js 第 53–56 行）：
+        if (req.body.isAdmin !== undefined && req.user.isAdmin) {
+          user.isAdmin = req.body.isAdmin;
+        }
+    只有当前登录用户本身是 admin，才允许改 isAdmin 字段。
+
+建议时间多的改法：
+    更严格，可以把 /users/:id PUT 拆成两个接口：
+        PUT /users/:id           —— 只改 name / email / avatar
+        PUT /users/:id/role      —— 只改 isAdmin，内层多一道 isAdmin 守卫
+
+为什么：
+    权限 & 数据不能混在一起改
+    （Ruby on Rails 的著名 CVE 就是这个，GPT老师提供context），很典。
+
+
+================================================================
+#C  model 文件命名不统一：User.js 大写 / product.js 小写
+================================================================
+问题：
+    backend/models/User.js  首字母大写
+    backend/models/product.js 首字母小写
+    backend/models/Cart.js   首字母大写（新增的）
+    风格不一致，看代码时容易打错 import 路径。
+
+现状：
+    保留了 product.js 小写。
+    原因：macOS / Windows 文件系统大小写不敏感 —— git 改大小写
+    会产生 "空 rename"，非常难回滚。
+
+建议改法（彻底处理）：
+    git mv backend/models/product.js backend/models/Product.tmp.js
+    git commit -m "rename product -> Product tmp"
+    git mv backend/models/Product.tmp.js backend/models/Product.js
+    git commit -m "rename to Product.js"
+    同时批量改 import 路径。
+
+为什么：
+    跨平台开发的坑：Mac 开发正常，Linux/Docker 部署报"Cannot find module"。
+    真实踩坑的case
+
+
+================================================================
+#D  JWT_SECRET 是 "project1"，还写在 .env 里进了代码
+================================================================
+问题：
+    .env 第 3 行：JWT_SECRET=project1
+    长度短、字典词，而且可能不小心被 commit 进 git。
+
+现状：
+    为了便于演示保留原样（但千万别push宇鲲的内容进gitHub
+
+改法：
+    1. .env 加到 .gitignore（我查的）
+    2. 生成强随机 secret：
+         node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+    3. 生产环境从云厂商的 Secret Manager 注入（不会做，得学）
+
+为什么：
+    打开 github.com search "JWT_SECRET=",
+    随便翻几页就能看到有人把自己的生产密钥传了上去 强烈警示
+
+
+================================================================
+#E  错误提示泄露了"是邮箱不存在，还是密码错"
+================================================================
+问题：
+    原 login 逻辑分别返回：
+        'User not found'（邮箱不存在）
+        'Invalid password'（密码错）
+    攻击者可以用它做账号枚举 —— 穷举邮箱，只看哪些返回
+    "User not found"，就知道剩下的是有效账号。
+
+现状：
+    我已经改成统一返回 'Invalid email or password'。
+    （controllers/auth.js 第 90 / 97 行）
+
+建议（进一步）：
+    1. 对登录失败接口加限流（express-rate-limit）
+    2. 失败超过 N 次 → 临时锁账号 + 强制验证码
+
+为什么：
+    information disclosure漏洞是轻微但常见的安全问题
+
+================================================================
+#F  cart controller 里 populate('items.product') 会打多次 DB
+================================================================
+问题：
+    每次修改购物车都 save → 再 findById + populate 一次，
+    共 2 次数据库往返。对高并发有轻微影响。
+
+现状：
+    代码清晰度优先，我用了这种写法（2 次查询但逻辑简洁）。
+    controllers/cart.js 里 getOrCreateCart + save + 重新 populate。
+
+建议改法（追求极致性能）：
+    用 Document.populate() 直接 populate 当前文档，不用重发查询：
+        await cart.populate('items.product');
+        // 然后直接返回 cart
+
+为什么：
+    "可读性" vs "性能" 的权衡，工业开发上 80% 情况应该选可读性，
+    性能瓶颈真出现再优化，过早优化是万恶之源
+
+
+================================================================
+#G  后端所有 controller 大量重复 try/catch + next(err)
+================================================================
+问题：
+    每个 handler 都要：
+        try { ... } catch (err) { next(err); }
+    写得很啰嗦，12 个 handler 重复 12 次。
+
+现状：
+    为了"谁读都能一眼看懂"的课堂友好度，保留了显式 try/catch。
+
+建议改法：
+    装一个包 express-async-errors，或者自己写 asyncHandler 包装：
+        const asyncHandler = (fn) => (req, res, next) =>
+          Promise.resolve(fn(req, res, next)).catch(next);
+        export const login = asyncHandler(async (req, res) => { ... });
+
+为什么：
+    Higher-Order Function / 函数装饰器思想， 可以和 React 的 HOC、
+    Python 的 @decorator 串起来演示"抽象重复"的威力（这个我不会，我搜的）。
+
+
+================================================================
+#H  前端所有 fetch 都用默认错误消息，用户看不懂
+================================================================
+问题：
+    thunk 的 rejectWithValue(extractError(err)) 里拿的是 axios
+    默认 message —— 多数时候是 "Request failed with status code 500"。
+
+现状：
+    extractError 里兜底用了 err.response.data.message ?? err.message ??
+    "Something went wrong"，已经比原始版本好。但有些不是后端控制的
+    错（网络断了、CORS 拒绝）仍然是技术提示。
+
+建议改法：
+    1. 在 extractError 里做一张错误码 -> 中文提示表
+    2. AntD 的 notification.error 展示给用户，不用原始 message
+
+为什么：
+    "对用户有意义的错误提示"是很多 junior 面试时被问到的题。
+    讲清 "错误边界 / 错误分级 / 错误文案" 
+
+
+================================================================
+#I  环境变量命名混搭（PORT / MONGO_URI / JWT_SECRET / JWT_EXPIRES_IN）
+================================================================
+问题：
+    原代码没有 JWT_EXPIRES_IN 这一项，实际代码里也不使用它 ——
+    我新增了这个配置项，但单靠 .env 不够显眼，有人可能不知道
+    有哪些环境变量。
+
+现状：
+    我已经把每一个环境变量的意图写进了代码注释（尤其是
+    config/db.js 和 utils/generateToken.js）。
+
+建议改法：
+    加一份 .env.example 文件，只列 key 不填值：
+        PORT=
+        MONGO_URI=
+        JWT_SECRET=
+        JWT_EXPIRES_IN=
+    新人 clone 项目时 cp .env.example .env 再填值，体验最佳。
+
+为什么：
+    Infrastructure as code， .env.example 是项目文档
+    不可分割的一部分，很多团队的 onboarding 文档第一条就是这个。
+
+
+================================================================
+#J  Redux 的 thunk 错误处理重复三次
+================================================================
+问题：
+    authSlice.js 里每个 thunk 都写：
+        .addCase(x.pending, 统一)
+        .addCase(x.fulfilled, handleAuthed)
+        .addCase(x.rejected, 统一)
+    signIn / signUp / updatePassword 三个 thunk 的 pending 和
+    rejected 完全一样。
+
+现状：
+    我已经把 fulfilled 抽成了 handleAuthed，但 pending / rejected
+    没抽，因为抽完后 extraReducers 的可读性反而下降。
+
+建议改法：
+    matcher 写法更优雅：
+        builder.addMatcher(
+          (action) => /^auth\/(signIn|signUp|updatePassword)\/pending$/.test(action.type),
+          (state) => { state.status = 'loading'; state.error = null; }
+        );
+
+为什么：
+    "pattern matching" vs "case by case" 的 tradeoff --- Google/gpt里有context
+    Redux Toolkit 的 addMatcher 是 rarely seen 的高阶功能，展示熟练度高，demo炫技时用
+
+
+================================================================
+结语
+================================================================
+
+这 10 条是我评估之后觉得值得demo的。
+都不会会让项目跑不起来 —— 严重错误在 ChiFixSuggestion.txt里归入 1–8 号并已修复
+
+讲时可以分三个优先级demo扯淡，看老师问到哪了：
+  1. "能跑起来"（对应 #1–#8 严重 bug，展示 debug 过程）
+  2. "能跑好一点"（对应 #9–#20 不合理但能跑，展示思维过程）
+  3. "能跑得好"（#A–#J，展示代码优化）
+
+================================================================

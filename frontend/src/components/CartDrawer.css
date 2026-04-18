@@ -1,0 +1,124 @@
+.cart-drawer-title {
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+}
+.cart-drawer-title .count {
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+/*
+ * 购物车商品列表
+ * --------------------------------------------------------------
+ * 关键点：加了 max-height + overflow-y: auto
+ * 解决 "Chuwa 遗留 bug #3 —— cart 的 rwd 没有 scroll"：
+ * 小屏手机上商品超过 3-4 个时，抽屉里的 promo / totals / checkout
+ * 按钮会被挤到屏幕外看不到。现在只让商品列表本身滚动，
+ * 底部结算区域永远可见。
+ *
+ * max-height 用 calc 是因为要减去抽屉头部 (≈56px)、promo (≈80px)、
+ * totals+button (≈180px)，给底部结算区留出固定高度。
+ */
+.cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+  /* 让商品列表在空间不够时自己滚动，而不是整个抽屉一起滚 */
+  max-height: calc(100vh - 360px);
+  overflow-y: auto;
+  /* iOS 上平滑滚动 */
+  -webkit-overflow-scrolling: touch;
+  /* 留点 right padding，避免滚动条压到商品右边价格上 */
+  padding-right: 4px;
+}
+
+/* 小屏（<600px）抽屉会全屏展开，底部结算区更紧凑 */
+@media (max-width: 600px) {
+  .cart-items {
+    max-height: calc(100vh - 320px);
+  }
+}
+
+.cart-item {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.cart-item img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  background: #f5f5f7;
+  border-radius: 4px;
+}
+
+.cart-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cart-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cart-item-head .name {
+  font-weight: 600;
+}
+
+.cart-item-head .price {
+  font-weight: 600;
+  color: #5e5adb;
+}
+
+.remove-link {
+  align-self: flex-end;
+  color: #5a6278;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 13px;
+}
+
+.promo {
+  margin: 16px 0;
+}
+.promo label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #5a6278;
+}
+.promo-error {
+  color: #d4380d;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.totals {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.totals > div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.totals .total-row {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 8px;
+  font-weight: 700;
+  font-size: 16px;
+}
