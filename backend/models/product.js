@@ -64,12 +64,22 @@ const ProductSchema = new Schema(
 
 /**
  * 保存前钩子：去除首尾空格，避免因为用户多按了空格导致搜索不到
+ * 起初以为 function (next)这种非async写法不受影响，
++   实际测试下来 product.js 也炸了同样的 "next is not a function"。
++   再读一遍 kareem/index.js 的 execPre 源码（行 57–65）：
++     for (let i = 1; i < _args.length; ++i) {
++       if (i === _args.length - 1 && typeof _args[i] === 'function') {
++         continue; // skip callbacks
++       }
++       args.push(_args[i]);
++     }
++   这段逻辑对所有pre 钩子一视同仁，不区分 async / 普通 function。
++   结论：不管是不是 async，都不要再写 next。
  */
-ProductSchema.pre('save', function (next) {
+ProductSchema.pre('save', function () {
   if (this.name) this.name = this.name.trim();
   if (this.description) this.description = this.description.trim();
   if (this.category) this.category = this.category.trim();
-  next();
 });
 
 /**
