@@ -57,7 +57,12 @@ const ProductForm = ({
       ...initialValues,
     });
     setImageUrl(initialValues.imageUrl || '');
-  }, [initialValues, form]);
+  }, [initialValues._id, form]); /*
+默认参数 initialValues = {} 每次 render 都是新对象引用，
+作为 useEffect 依赖会让任何 re-render
+（比如点 Upload 按钮）都触发 form.setFieldsValue('') 把用户输入清空；
+改成依赖稳定标量 _id（Create 页恒为 undefined，Edit 页只在商品数据到达时变一次），
+就只在真正需要重置的时候才跑。 */
 
   const handleUpload = () => {
     const v = form.getFieldValue('imageUrl');
