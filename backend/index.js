@@ -23,7 +23,7 @@ const app = express();
 // 连接数据库（内部会读 process.env.MONGO_URI）
 connectDB();
 
-// 允许跨域（Vite dev 服务器用 5173 端口调本服务的 5000 端口时必须）
+// 允许跨域（Vite dev 服务器用 5173 端口调本服务的 4000 端口时必须）
 app.use(cors());
 
 // 解析 JSON body，单次最大 2MB（防止恶意大 body）

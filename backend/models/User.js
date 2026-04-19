@@ -43,20 +43,28 @@ const UserSchema = new Schema(
  *
  * 重要：一定要调用 next()，否则 save() 永远 pending。
  * 这是原代码里最严重的 bug（正常分支漏了 next()）。
+ * bug：用户无法注册，报next is not a function，因为 next 没有被调用，
+ * Mongoose v9 重要变化：
+ *   当钩子是 async function 时，Mongoose 不再把 next 作为参数传入
+ *   （它认为 async 函数应该用 return 的 Promise 来通知完成，
+ *   不要再混用 next 回调）。所以这里 *不能* 写成
+ *   `async function (next)` 然后调 next() —— 那会抛
+ *   "next is not a function"。
+ *   推荐写法：纯 async/await，函数 return 即视为完成；
+ *   提前结束就 `return`。解决方案：删除next。
  */
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function () {
   // 补默认头像
   if (!this.avatar) {
     this.avatar = gravatar.url(this.email, { s: '200', r: 'pg', d: 'mm' });
   }
 
   // 密码没改就直接放行
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) return;//v9 不再把 next 传进 async 钩子
 
   // 明文 → bcrypt 哈希（10 轮 salt 是业界默认）
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 /**
