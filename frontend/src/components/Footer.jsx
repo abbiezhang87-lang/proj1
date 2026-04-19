@@ -11,7 +11,7 @@ import './Footer.css';
 const Footer = () => (
   <footer className="site-footer">
     <div className="footer-inner">
-      <span className="copy">©2022 All Rights Reserved.</span>
+      <span className="copy">©2026 All Rights Reserved.</span>
       <div className="socials">
         <a href="#" aria-label="YouTube">
           <YoutubeFilled />
