@@ -1,8 +1,4 @@
 import api from './axios.js';
-
-/**
- * Product CRUD + list. List supports { page, limit, q, sort }.
- */
 export const listProductsApi = (params = {}) =>
   api.get('/products', { params });
 
