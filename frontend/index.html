@@ -4,7 +4,54 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>Management Chuwa</title>
+
+    <!--
+      Tailwind CSS via Play CDN
+      ------------------------------------------------------------------
+      为什么用 CDN：
+        1. 免配置
+
+      等网络恢复后切换：
+        1. npm i -D tailwindcss @tailwindcss/vite
+        2. vite.config.js 里 plugins 加 tailwindcss()
+        3. src/index.css 顶部加 @import "tailwindcss";
+        4. 删掉下面这两行 script/config
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f2f2fc',
+                100: '#e5e4f9',
+                500: '#5e5adb',
+                600: '#4a46b5',
+                700: '#3b3890',
+              },
+              ink: {
+                DEFAULT: '#1A1D24',
+                700: '#262a33',
+                500: '#3b3f49',
+              },
+              surface: '#f9fafb',
+            },
+            fontFamily: {
+              sans: [
+                'system-ui',
+                'Segoe UI',
+                'Roboto',
+                'Helvetica Neue',
+                'Arial',
+                'sans-serif',
+              ],
+            },
+          },
+        },
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,9 +1,9 @@
 import express from 'express';
 import {
-    getAllUsers,
-    getUser,
-    updateUser,
-    deleteUser,
+  getAllUsers,
+  getUser,
+  updateUser,
+  deleteUser,
 } from '../controllers/user.js';
 import authToken, { isAdmin } from '../middleware/auth.js';
 

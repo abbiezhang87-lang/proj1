@@ -53,7 +53,6 @@ ProductSchema.pre('save', function () {
   if (this.category) this.category = this.category.trim();
 });
 
-
 ProductSchema.methods.isAvailable = function () {
   return this.inStockQuantity > 0;
 };
