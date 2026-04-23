@@ -2,6 +2,11 @@
 
 A full-stack app split into a React/Redux frontend and an Express/MongoDB backend, where users sign up, shop, and place orders while admins manage the product catalog.
 
+User Feature (sign-in/signup/update password): Yukun Tao
+Product Feature (product update page and pagination) : Chi Zhang
+Cart Feature(item price and checkout): Banglin Yin
+Additional feature: search item and show order history page.
+
 **Frontend:** React 19, Redux Toolkit, React Router, Ant Design, Tailwind (CDN), Vite.
 
 **Backend:** Express 5 (ES modules), MongoDB + Mongoose 9, JWT auth, Nodemailer (Gmail SMTP with Ethereal fallback).
