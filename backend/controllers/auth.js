@@ -11,6 +11,29 @@ const publicUser = (u) => ({
   isAdmin: u.isAdmin,
 });
 
+/**
+ * 注册时的 admin 自动授权策略（demo 项目用）
+ * 白名单从 .env 读，逗号分隔，大小写不敏感：
+ *   ADMIN_EMAILS  = a@x.com,b@y.com单个邮箱完全匹配
+ *   ADMIN_DOMAINS = @maildrop.cc,@chuwa.com 邮箱域名后缀
+ * 没env时fallback到代码里写死的 @maildrop.cc，保证旧行为不变。
+ */
+const parseList = (s) =>
+  String(s || '')
+    .split(',')
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+
+const ADMIN_EMAILS = new Set(parseList(process.env.ADMIN_EMAILS));
+const ADMIN_DOMAINS = parseList(process.env.ADMIN_DOMAINS);
+if (ADMIN_DOMAINS.length === 0) ADMIN_DOMAINS.push('@maildrop.cc');
+
+const shouldBeAdmin = (email) => {
+  const lower = String(email).toLowerCase();
+  if (ADMIN_EMAILS.has(lower)) return true;
+  return ADMIN_DOMAINS.some((d) => lower.endsWith(d));
+};
+
 export const register = async (req, res, next) => {
   try {
     const { name, email, password, avatar } = req.body;
@@ -23,8 +46,8 @@ export const register = async (req, res, next) => {
     if (existing) {
       return res.status(409).json({ message: 'User already exists' });
     }
-    // @maildrop.cc 自动授管理员（跟 Figma 内部员工场景对齐）
-    const isAdmin = email.toLowerCase().endsWith('@maildrop.cc');
+    // 自动授管理员（白名单看 ADMIN_DOMAINS / ADMIN_EMAILS）
+    const isAdmin = shouldBeAdmin(email);
     const newUser = await User.create({
       name,
       email,
