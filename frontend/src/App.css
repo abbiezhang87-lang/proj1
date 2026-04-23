@@ -12,11 +12,10 @@
   flex-direction: column;
 }
 
-/* Ant Design focus / link overrides to match the purple palette */
+/* Ant Design */
 a {
   color: #5e5adb;
 }
-
 a:hover {
   color: #4a46b5;
 }
