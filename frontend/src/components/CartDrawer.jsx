@@ -36,14 +36,7 @@ const CartDrawer = () => {
     }
   };
 
-  /**
-   * 结账 = 在后端把当前购物车"结成订单"并清空购物车（事务性操作由
-   * 后端 placeOrder 保证）；前端再 fetchCart 把已清空的购物车同步回来。
-   *
-   * 原来这里只是 clearCart —— 什么记录都没留下。现在下单会落库，
-   * 用户能在 Order History 页看到这次购买。
-   */
-  const onCheckout = async () => {
+ const onCheckout = async () => {
     if (!items.length) {
       message.warning('Your cart is empty');
       return;
@@ -53,7 +46,6 @@ const CartDrawer = () => {
       message.error(res.payload || 'Failed to place order');
       return;
     }
-    // 后端在 placeOrder 里已经把购物车清空了，这里同步一下 Redux
     dispatch(fetchCart());
     dispatch(closeDrawer());
     message.success('Thanks! Your order has been placed.');

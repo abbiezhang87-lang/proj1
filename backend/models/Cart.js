@@ -1,5 +1,4 @@
 import { Schema, model } from 'mongoose';
-
 const CartItemSchema = new Schema(
   {
     product: {
@@ -14,7 +13,7 @@ const CartItemSchema = new Schema(
       default: 1,
     },
   },
-  { _id: false }, // 子文档不需要独立 _id，减少冗余字段
+  { _id: false }, 
 );
 
 const CartSchema = new Schema(
@@ -23,7 +22,7 @@ const CartSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true, // 一个用户只能有一份购物车
+      unique: true, 
     },
     items: { type: [CartItemSchema], default: [] }, // 默认空数组，避免 undefined
     discountCode: { type: String, default: '' }, // 当前生效的优惠码
