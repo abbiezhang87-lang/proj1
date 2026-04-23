@@ -8,7 +8,6 @@ const buildCartPayload = (cart) => {
     quantity: it.quantity,
   }));
 
-  // product 可能为 null（商品被删除了），此时 price 缺失 → computeAmounts 按 0 计
   const priced = items.map((it) => ({
     price: it.product?.price || 0,
     quantity: it.quantity,

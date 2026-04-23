@@ -18,20 +18,6 @@ import { fetchCart } from './features/cart/cartSlice.js';
 
 import './App.css';
 
-/**
- * 路由入口
- * ------------------------------------------------------------------
- * Layout 包一层 Header + Footer + CartDrawer；Admin 路由用
- * <ProtectedRoute adminOnly> 守门。
- *
- * ★ 认证页重构（Phase I #1）：
- *   原来的 /signin /signup /update-password 三个独立页合并为
- *   /auth?mode=signin|signup|update-password 的单页多态方案。
- *   旧路径全部 301 重定向到新路径，保证老书签不打断。
- *
- * 启动时如果 localStorage 里有 token，静默 fetchMe + fetchCart
- * 把 Redux 状态 hydrate 回来 —— 刷新不掉登录态。
- */
 function App() {
   const dispatch = useDispatch();
 

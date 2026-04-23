@@ -11,16 +11,19 @@ import { useSelector } from 'react-redux';
  * defense (the final line being backend isAdmin middleware).
  */
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-    const { isLoggedIn, isAdmin } = useSelector((s) => s.auth);
-    const location = useLocation();
+  const { isLoggedIn, isAdmin } = useSelector((s) => s.auth);
+  const location = useLocation();
 
-    if (!isLoggedIn) {
-        return <Navigate to="/signin" state={{ from: location }} replace />;
-    }
-    if (adminOnly && !isAdmin) {
-        return <Navigate to="/" replace />;
-    }
-    return children;
+  if (!isLoggedIn) {
+    // 认证合并成 /auth 后，未登录统一去 Sign In tab
+    return (
+      <Navigate to="/auth?mode=signin" state={{ from: location }} replace />
+    );
+  }
+  if (adminOnly && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
 };
 
 export default ProtectedRoute;

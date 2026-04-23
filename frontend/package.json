@@ -10,20 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ant-design/icons": "^6.1.1",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
+    "@ant-design/icons": "^6.0.0",
     "@reduxjs/toolkit": "^2.11.2",
     "antd": "^6.3.6",
     "axios": "^1.15.0",
     "dayjs": "^1.11.20",
-    "jwt-decode": "^4.0.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^7.14.1",
-    "uuid": "^14.0.0",
-    "validator": "^13.15.35"
+    "react-router-dom": "^7.14.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
