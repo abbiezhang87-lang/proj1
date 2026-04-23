@@ -1,0 +1,21 @@
+/* Global app shell */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ant Design */
+a {
+  color: #5e5adb;
+}
+a:hover {
+  color: #4a46b5;
+}
