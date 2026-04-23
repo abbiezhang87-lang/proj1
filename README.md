@@ -8,6 +8,7 @@ A full-stack app split into a React/Redux frontend and an Express/MongoDB backen
 - **Product Feature (product update page and pagination):** Chi Zhang
 - **Cart Feature (item price and checkout):** Banglin Yin
 - **Additional Features:** product search and order history page
+  
 
 **Frontend:** React 19, Redux Toolkit, React Router, Ant Design, Tailwind (CDN), Vite.
 
@@ -43,7 +44,7 @@ proj1/
 
 ## Environment variables
 
-The backend reads a single `.env` file at the repo root. Copy the template below into `.env` and fill in your own values.
+The backend reads a single `.env` file at the repo root. Copy the template below into `.env` and fill in your own values. Initial .env: https://drive.google.com/file/d/1sBnFKh_idWzL4zFyF_G1tCBOz0ULfUhE/view?usp=sharing
 
 **MONGO_URI** — MongoDB connection string.
 
