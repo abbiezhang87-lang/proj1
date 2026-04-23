@@ -3,7 +3,9 @@ import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import CartDrawer from './CartDrawer.jsx';
 
-
+/**
+ * Shared chrome: header + page content + footer + cart drawer.
+ */
 const Layout = () => (
   <div className="app-shell">
     <Header />

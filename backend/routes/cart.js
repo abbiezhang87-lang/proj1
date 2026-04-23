@@ -10,8 +10,6 @@ import {
 import authToken from '../middleware/auth.js';
 
 const router = express.Router();
-
-
 router.use(authToken);
 
 router.get('/', getCart);

@@ -4,7 +4,6 @@ import {
   FacebookFilled,
 } from '@ant-design/icons';
 
-
 const Footer = () => (
   <footer className="bg-ink text-gray-300">
     <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 px-4 py-5 text-sm sm:flex-row sm:justify-between sm:px-6 lg:px-8">

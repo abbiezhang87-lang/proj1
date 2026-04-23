@@ -7,71 +7,27 @@ import {
   applyPromoApi,
   clearCartApi,
 } from '../../api/cart.js';
-
+// 监听 product 的增删改，让购物车里的商品快照保持最新
 import {
   updateProduct as updateProductThunk,
   deleteProduct as deleteProductThunk,
 } from '../product/productSlice.js';
+import { extractError, isUserLoggedIn } from '../../utils/thunkUtils.js';
 
-
-
-const extractError = (err) =>
-  err?.response?.data?.message || err?.message || 'Something went wrong';
-
-const LOCAL_KEY = 'guest_cart';
-
-const readGuestCart = () => {
-  try {
-    return (
-      JSON.parse(localStorage.getItem(LOCAL_KEY)) || {
-        items: [],
-        discountCode: '',
-      }
-    );
-  } catch {
-    return { items: [], discountCode: '' };
-  }
-};
-
-const writeGuestCart = (cart) =>
-  localStorage.setItem(
-    LOCAL_KEY,
-    JSON.stringify({ items: cart.items, discountCode: cart.discountCode || '' }),
-  );
-
-const isLoggedIn = () => Boolean(localStorage.getItem('token'));
-
-
-const recomputeGuestCart = (state) => {
-  const items = state.items;
-  const subtotal = items.reduce(
-    (s, it) => s + (it.product?.price || 0) * it.quantity,
-    0,
-  );
-  const tax = +(subtotal * 0.1).toFixed(2);
-  const promos = {
-    '20 DOLLAR OFF': { type: 'fixed', value: 20 },
-    WELCOME10: { type: 'percent', value: 0.1 },
-  };
-  const promo = promos[(state.discountCode || '').toUpperCase()];
-  let discount = 0;
-  if (promo) {
-    discount =
-      promo.type === 'fixed'
-        ? Math.min(promo.value, subtotal)
-        : +(subtotal * promo.value).toFixed(2);
-  }
-  state.subtotal = +subtotal.toFixed(2);
-  state.tax = tax;
-  state.discount = discount;
-  state.total = +(subtotal + tax - discount).toFixed(2);
-  writeGuestCart(state);
-};
+/**
+ * 购物车 slice —— 仅支持登录用户
+ * ------------------------------------------------------------------
+ * 设计要点：
+ *   - 所有购物车数据都在后端 MongoDB 里（符合 Phase III #2h/#3d 的 real api 路径）
+ *   - 每个 thunk 就做两件事：调对应的 API，把返回的 cart 塞到 Redux state
+ *   - 没登录的用户点 Add → thunk 返回 rejectWithValue，前端静默忽略
+ *   - extractError / isUserLoggedIn 从 utils/thunkUtils.js 共用一份
+ */
 
 export const fetchCart = createAsyncThunk(
   'cart/fetchCart',
-  async (_, { rejectWithValue }) => {
-    if (!isLoggedIn()) return null; // signal guest mode
+  async (_, { getState, rejectWithValue }) => {
+    if (!isUserLoggedIn(getState())) return null; // 没登录 → 啥也不干
     try {
       const { data } = await getCartApi();
       return data;
@@ -81,40 +37,22 @@ export const fetchCart = createAsyncThunk(
   },
 );
 
-
-export const syncCartAfterProductChange = createAsyncThunk(
-  'cart/syncCartAfterProductChange',
-  async (product, { dispatch, rejectWithValue }) => {
-    try {
-   
-      if (isLoggedIn()) {
-        await dispatch(fetchCart());
-        return { handled: true };
-      }
-   
-      return { guest: true, product };
-    } catch (err) {
-      return rejectWithValue(extractError(err));
-    }
-  },
-);
-
 export const addToCart = createAsyncThunk(
   'cart/addToCart',
   async ({ product, quantity = 1 }, { getState, rejectWithValue }) => {
-
-    const stock = product?.inStockQuantity ?? 0;
-    if (stock <= 0) {
-      return rejectWithValue('Product is out of stock');
+    if (!isUserLoggedIn(getState())) {
+      return rejectWithValue('Please sign in to add items to cart');
     }
+    // 库存校验（缺货/超库存一律拒绝）
+    const stock = product?.inStockQuantity ?? 0;
+    if (stock <= 0) return rejectWithValue('Product is out of stock');
+
     const existing = getState().cart.items.find(
       (it) => it.product?._id === product._id,
     );
     const nextQty = (existing?.quantity || 0) + quantity;
-    if (nextQty > stock) {
-      return rejectWithValue(`Only ${stock} in stock`);
-    }
-    if (!isLoggedIn()) return { guest: true, product, quantity };
+    if (nextQty > stock) return rejectWithValue(`Only ${stock} in stock`);
+
     try {
       const { data } = await addCartItemApi(product._id, quantity);
       return data;
@@ -126,13 +64,13 @@ export const addToCart = createAsyncThunk(
 
 export const updateCartItem = createAsyncThunk(
   'cart/updateCartItem',
-  async ({ product, quantity }, { rejectWithValue }) => {
-    
+  async ({ product, quantity }, { getState, rejectWithValue }) => {
+    if (!isUserLoggedIn(getState())) return rejectWithValue('Please sign in');
+    // quantity=0 表示移除，不校验库存
     const stock = product?.inStockQuantity ?? 0;
     if (quantity > 0 && quantity > stock) {
       return rejectWithValue(`Only ${stock} in stock`);
     }
-    if (!isLoggedIn()) return { guest: true, product, quantity };
     try {
       const { data } = await updateCartItemApi(product._id, quantity);
       return data;
@@ -144,8 +82,8 @@ export const updateCartItem = createAsyncThunk(
 
 export const removeFromCart = createAsyncThunk(
   'cart/removeFromCart',
-  async ({ product }, { rejectWithValue }) => {
-    if (!isLoggedIn()) return { guest: true, product };
+  async ({ product }, { getState, rejectWithValue }) => {
+    if (!isUserLoggedIn(getState())) return rejectWithValue('Please sign in');
     try {
       const { data } = await removeCartItemApi(product._id);
       return data;
@@ -157,8 +95,8 @@ export const removeFromCart = createAsyncThunk(
 
 export const applyPromo = createAsyncThunk(
   'cart/applyPromo',
-  async (code, { rejectWithValue }) => {
-    if (!isLoggedIn()) return { guest: true, code };
+  async (code, { getState, rejectWithValue }) => {
+    if (!isUserLoggedIn(getState())) return rejectWithValue('Please sign in');
     try {
       const { data } = await applyPromoApi(code);
       return data;
@@ -170,8 +108,8 @@ export const applyPromo = createAsyncThunk(
 
 export const clearCart = createAsyncThunk(
   'cart/clearCart',
-  async (_, { rejectWithValue }) => {
-    if (!isLoggedIn()) return { guest: true };
+  async (_, { getState, rejectWithValue }) => {
+    if (!isUserLoggedIn(getState())) return rejectWithValue('Please sign in');
     try {
       const { data } = await clearCartApi();
       return data;
@@ -181,10 +119,10 @@ export const clearCart = createAsyncThunk(
   },
 );
 
-const guestInit = readGuestCart();
+// 初始状态一律为空，用户登录之后由 fetchCart 拉服务端数据填进来
 const initialState = {
-  items: guestInit.items || [],
-  discountCode: guestInit.discountCode || '',
+  items: [],
+  discountCode: '',
   subtotal: 0,
   tax: 0,
   discount: 0,
@@ -194,18 +132,7 @@ const initialState = {
   drawerOpen: false,
 };
 
-
-(() => {
-  const s = initialState;
-  const subtotal = s.items.reduce(
-    (sum, it) => sum + (it.product?.price || 0) * it.quantity,
-    0,
-  );
-  s.subtotal = +subtotal.toFixed(2);
-  s.tax = +(subtotal * 0.1).toFixed(2);
-  s.total = +(s.subtotal + s.tax).toFixed(2);
-})();
-
+// 服务端返回的 cart 直接覆盖到 state，对所有 thunk 通用
 const replaceFromServer = (state, payload) => {
   state.items = payload.items || [];
   state.discountCode = payload.discountCode || '';
@@ -225,7 +152,7 @@ const cartSlice = createSlice({
     closeDrawer: (s) => {
       s.drawerOpen = false;
     },
- 
+    // 退出登录时清空购物车（authSlice 的 logout 之后会 dispatch 它）
     resetCart: (s) => {
       s.items = [];
       s.discountCode = '';
@@ -238,116 +165,47 @@ const cartSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchCart.fulfilled, (state, { payload }) => {
-        if (!payload) return; 
-        replaceFromServer(state, payload);
+        if (payload) replaceFromServer(state, payload);
       })
       .addCase(addToCart.fulfilled, (state, { payload }) => {
-        if (payload?.guest) {
-          const existing = state.items.find(
-            (it) => it.product._id === payload.product._id,
-          );
-          if (existing) existing.quantity += payload.quantity;
-          else
-            state.items.push({
-              product: payload.product,
-              quantity: payload.quantity,
-            });
-          recomputeGuestCart(state);
-          return;
-        }
         replaceFromServer(state, payload);
       })
       .addCase(updateCartItem.fulfilled, (state, { payload }) => {
-        if (payload?.guest) {
-          if (payload.quantity <= 0) {
-            state.items = state.items.filter(
-              (it) => it.product._id !== payload.product._id,
-            );
-          } else {
-            const it = state.items.find(
-              (x) => x.product._id === payload.product._id,
-            );
-            if (it) it.quantity = payload.quantity;
-          }
-          recomputeGuestCart(state);
-          return;
-        }
         replaceFromServer(state, payload);
       })
       .addCase(removeFromCart.fulfilled, (state, { payload }) => {
-        if (payload?.guest) {
-          state.items = state.items.filter(
-            (it) => it.product._id !== payload.product._id,
-          );
-          recomputeGuestCart(state);
-          return;
-        }
         replaceFromServer(state, payload);
       })
       .addCase(applyPromo.fulfilled, (state, { payload }) => {
-        if (payload?.guest) {
-          state.discountCode = (payload.code || '').toUpperCase();
-          recomputeGuestCart(state);
-          return;
-        }
         replaceFromServer(state, payload);
       })
       .addCase(applyPromo.rejected, (state, { payload }) => {
         state.error = payload;
       })
       .addCase(clearCart.fulfilled, (state, { payload }) => {
-        if (payload?.guest) {
-          state.items = [];
-          state.discountCode = '';
-          recomputeGuestCart(state);
-          return;
-        }
         replaceFromServer(state, payload);
       })
-
- 
+      // 管理员改了商品 → 把购物车里对应商品的快照更新（保持名字/价格/图片最新）
       .addCase(updateProductThunk.fulfilled, (state, { payload }) => {
         if (!payload?._id) return;
-        let changed = false;
         state.items.forEach((it) => {
-          if (it.product?._id === payload._id) {
-            it.product = payload; 
-            changed = true;
-          }
+          if (it.product?._id === payload._id) it.product = payload;
         });
-        
-        if (changed && !isLoggedIn()) recomputeGuestCart(state);
       })
-
-      
+      // 商品被删了 → 从购物车里剔除
       .addCase(deleteProductThunk.fulfilled, (state, { payload: id }) => {
-        const before = state.items.length;
         state.items = state.items.filter((it) => it.product?._id !== id);
-        if (state.items.length !== before && !isLoggedIn()) {
-          recomputeGuestCart(state);
-        }
-      })
-
-    
-      .addCase(syncCartAfterProductChange.fulfilled, (state, { payload }) => {
-        if (payload?.guest && payload.product?._id) {
-          const it = state.items.find(
-            (x) => x.product?._id === payload.product._id,
-          );
-          if (it) {
-            it.product = payload.product;
-            recomputeGuestCart(state);
-          }
-        }
       });
   },
 });
 
 export const { openDrawer, closeDrawer, resetCart } = cartSlice.actions;
 
-
+// 购物车里总数量（给 Header 的红色小数字用）
 export const selectCartCount = (state) =>
   state.cart.items.reduce((n, it) => n + it.quantity, 0);
+
+// 某个商品在购物车里的数量（给商品卡 / 详情页用）
 export const selectCartQuantityFor = (productId) => (state) =>
   state.cart.items.find((it) => it.product._id === productId)?.quantity || 0;
 

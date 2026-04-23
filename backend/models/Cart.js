@@ -1,16 +1,15 @@
 import { Schema, model } from 'mongoose';
-
 const CartItemSchema = new Schema(
   {
     product: {
       type: Schema.Types.ObjectId,
-      ref: 'Product', 
+      ref: 'Product', // 关联 Product，populate 后可直接拿到商品完整信息
       required: true,
     },
     quantity: {
       type: Number,
       required: true,
-      min: [1, 'Quantity must be at least 1'], 
+      min: [1, 'Quantity must be at least 1'], // 最少 1 件，避免 0 件脏数据
       default: 1,
     },
   },
@@ -23,12 +22,12 @@ const CartSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true,
+      unique: true, 
     },
-    items: { type: [CartItemSchema], default: [] }, 
-    discountCode: { type: String, default: '' },
+    items: { type: [CartItemSchema], default: [] }, // 默认空数组，避免 undefined
+    discountCode: { type: String, default: '' }, // 当前生效的优惠码
   },
-  { timestamps: true }, 
+  { timestamps: true }, // 自动加 createdAt / updatedAt
 );
 
 export default model('Cart', CartSchema);

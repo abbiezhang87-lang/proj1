@@ -1,16 +1,6 @@
 import Cart from '../models/Cart.js';
 import Product from '../models/product.js';
-
-
-const PROMO_CODES = {
-  '20 DOLLAR OFF': { type: 'fixed', value: 20 },
-  WELCOME10: { type: 'percent', value: 0.1 },
-};
-
-
-const TAX_RATE = 0.1;
-
-
+import { PROMO_CODES, computeAmounts } from '../utils/pricing.js';
 
 const buildCartPayload = (cart) => {
   const items = cart.items.map((it) => ({
@@ -18,35 +8,25 @@ const buildCartPayload = (cart) => {
     quantity: it.quantity,
   }));
 
-
-  const subtotal = items.reduce(
-    (sum, it) => sum + (it.product?.price || 0) * it.quantity,
-    0,
+  // product 可能为 null（商品被删除了），此时 price 缺失 → computeAmounts 按 0 计
+  const priced = items.map((it) => ({
+    price: it.product?.price || 0,
+    quantity: it.quantity,
+  }));
+  const { subtotal, tax, discount, total } = computeAmounts(
+    priced,
+    cart.discountCode,
   );
-  const tax = +(subtotal * TAX_RATE).toFixed(2);
-
-
-  let discount = 0;
-  const promo = PROMO_CODES[cart.discountCode];
-  if (promo) {
-    discount =
-      promo.type === 'fixed'
-        ? Math.min(promo.value, subtotal)
-        : +(subtotal * promo.value).toFixed(2);
-  }
-
-  const total = +(subtotal + tax - discount).toFixed(2);
 
   return {
     items,
     discountCode: cart.discountCode || '',
-    subtotal: +subtotal.toFixed(2),
+    subtotal,
     tax,
     discount,
     total,
   };
 };
-
 
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId }).populate('items.product');
@@ -57,7 +37,6 @@ const getOrCreateCart = async (userId) => {
   return cart;
 };
 
-
 export const getCart = async (req, res, next) => {
   try {
     const cart = await getOrCreateCart(req.user._id);
@@ -66,7 +45,6 @@ export const getCart = async (req, res, next) => {
     next(err);
   }
 };
-
 
 export const addItem = async (req, res, next) => {
   try {
@@ -105,8 +83,7 @@ export const addItem = async (req, res, next) => {
     }
     await cart.save();
 
-
-    const fresh = await Cart.findById(cart._id).populate('items.product');
+  const fresh = await Cart.findById(cart._id).populate('items.product');
     res.json(buildCartPayload(fresh));
   } catch (err) {
     next(err);
@@ -155,7 +132,6 @@ export const updateItem = async (req, res, next) => {
   }
 };
 
-
 export const removeItem = async (req, res, next) => {
   try {
     const { productId } = req.params;
@@ -171,7 +147,6 @@ export const removeItem = async (req, res, next) => {
     next(err);
   }
 };
-
 
 export const applyPromo = async (req, res, next) => {
   try {
@@ -193,7 +168,6 @@ export const applyPromo = async (req, res, next) => {
     next(err);
   }
 };
-
 
 export const clearCart = async (req, res, next) => {
   try {
