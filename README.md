@@ -46,7 +46,7 @@ The backend reads a single `.env` file at the repo root. Copy the template below
 
 **PORT** — backend port (default `4000`).
 
-**MAIL_USER / MAIL_PASS** — a Gmail address and its app password (spaces are stripped automatically). If either is missing, the mailer falls back to Ethereal and only prints a preview URL instead of actually sending mail.
+**MAIL_USER / MAIL_PASS** — You need to enter a Gmail address and its App Password, any spaces will be removed automatically. If either one is missing, the system will not send a real email. Instead, it will use Ethereal, a test email service, and only give you a preview link.
 
 **FRONTEND_URL** — the base URL the password-reset email links back to. Vite defaults to `http://localhost:5173`.
 
