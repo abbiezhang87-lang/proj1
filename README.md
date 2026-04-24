@@ -20,6 +20,10 @@ A **regular user** can browse products, add items to the cart, apply promo codes
 
 An **admin** can do everything a regular user can, plus create, edit, and delete products.
 
+## Postman Collection
+
+https://drive.google.com/file/d/1za1btoYHsNrBxGpxvOxOCp44eB_5CKm2/view?usp=sharing
+
 ## Project layout
 
 ```
